@@ -486,16 +486,16 @@ class TestResult
                 $link->query("
                 CREATE TABLE IF NOT EXISTS `probe_test` (
                   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                  `name` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+                  `trigger_success` INT UNSIGNED NOT NULL DEFAULT 0
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 ");
 
                 $link->query("
                 CREATE TRIGGER IF NOT EXISTS probe_test_trigger
-                AFTER INSERT ON `users` 
+                AFTER INSERT ON `probe_test` 
                 FOR EACH ROW 
                 BEGIN 
-                    INSERT INTO `probe_test` (`name`) VALUES ('test');  
+                    UPDATE `probe_test` SET `trigger_success` = 1;
                 END
                 ");
 
