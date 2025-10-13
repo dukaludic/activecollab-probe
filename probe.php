@@ -477,6 +477,37 @@ class TestResult
             return false;
         }
 
+        /**
+         * @param mysqli $link
+         * @return array
+         */
+        function check_trigger_permissions($link) {
+            try {
+                $link->query("
+                CREATE TABLE IF NOT EXISTS `probe_test` (
+                  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                  `name` TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                ");
+
+                $link->query("
+                CREATE TRIGGER IF NOT EXISTS probe_test_trigger
+                AFTER INSERT ON `users` 
+                FOR EACH ROW 
+                BEGIN 
+                    INSERT INTO `probe_test` (`name`) VALUES ('test');  
+                END
+                ");
+
+                return ['ok' => true, 'message' => null];
+            } catch (Throwable $err) {
+                return ['ok' => false, 'message' => $err->getMessage()];
+            } finally {
+                $link->query("DROP TRIGGER IF EXISTS probe_test_trigger;");
+                $link->query("DROP TABLE IF EXISTS probe_test");
+            }
+        }
+
         // ---------------------------------------------------
         //  Do the magic
         // ---------------------------------------------------
@@ -549,6 +580,17 @@ class TestResult
                         $results[] = new TestResult("{$mysql_server} thread stack should be 256kb", STATUS_ERROR);
                         $mysql_ok = false;
                     }
+
+                    $check_trigger_permission_result = check_trigger_permissions($link);
+                    $can_create_triggers = $check_trigger_permission_result['ok'];
+
+                    if ($can_create_triggers) {
+                        $results[] = new TestResult("{$mysql_server} trigger permissions are enabled");
+                    } else {
+                        $results[] = new TestResult("{$mysql_server} trigger permissions are not enabled", STATUS_ERROR, $check_trigger_permission_result['message']);
+                        $mysql_ok = false;
+                    }
+
                 } else {
                     $results[] = new TestResult("{$mysql_server} {$min_mysql_server_version} or later is required. Your {$mysql_server} version is {$mysql_version}", STATUS_ERROR);
                     $mysql_ok = false;
