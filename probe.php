@@ -483,36 +483,38 @@ class TestResult
          */
         function check_trigger_permissions($link)
         {
-            $link->query("
-                    CREATE TABLE IF NOT EXISTS `probe_test` (
-                    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    `trigger_success` INT UNSIGNED NOT NULL DEFAULT 0
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                    ");
+            try {
+                $link->query('
+                CREATE TABLE IF NOT EXISTS `probe_test` (
+                  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                  `trigger_success` INT UNSIGNED NOT NULL DEFAULT 0
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                ');
 
-            if ($link->error) {
-                return ['ok' => false, 'message' => $link->error];
+                if ($link->error) {
+                    return ['ok' => false, 'message' => $link->error];
+                }
+
+                $link->query('
+                CREATE TRIGGER IF NOT EXISTS probe_test_trigger
+                AFTER INSERT ON `probe_test` 
+                FOR EACH ROW 
+                BEGIN 
+                    UPDATE `probe_test` SET `trigger_success` = 1;
+                END
+                ');
+
+                if ($link->error) {
+                    return ['ok' => false, 'message' => $link->error];
+                }
+
+                return ['ok' => true, 'message' => null];
+            } catch (Throwable $e) {
+                return ['ok' => false, 'message' => $e->getMessage()];
+            } finally {
+                $link->query('DROP TRIGGER IF EXISTS probe_test_trigger;');
+                $link->query('DROP TABLE IF EXISTS probe_test');
             }
-
-            $link->query("
-                    CREATE TRIGGER IF NOT EXISTS probe_test_trigger
-                    AFTER INSERT ON `probe_test` 
-                    FOR EACH ROW 
-                    BEGIN 
-                        UPDATE `probe_test` SET `trigger_success` = 1;
-                    END
-                    ");
-
-            $error = $link->error;
-
-            $link->query("DROP TRIGGER IF EXISTS probe_test_trigger;");
-            $link->query("DROP TABLE IF EXISTS probe_test");
-
-            if($error) {
-                return ['ok' => false, 'message' => $error];
-            }
-
-            return ['ok' => true, 'message' => null];
         }
 
         /**
@@ -520,15 +522,19 @@ class TestResult
          * @return array
          */
         function check_view_permissions($link) {
-            $link->query("CREATE VIEW IF NOT EXISTS test_view AS SELECT 1 AS success;");
+            try {
+                $link->query('CREATE VIEW IF NOT EXISTS test_view AS SELECT 1 AS success;');
 
-            if($link->error) {
-                return ['ok' => false, 'message' => $link->error];
+                if ($link->error) {
+                    return ['ok' => false, 'message' => $link->error];
+                }
+
+                return ['ok' => true, 'message' => null];
+            } catch (Throwable $e) {
+                return ['ok' => false, 'message' => $e->getMessage()];
+            } finally {
+                $link->query('DROP VIEW IF EXISTS test_view');
             }
-
-            $link->query("DROP VIEW test_view");
-
-            return ['ok' => true, 'message' => null];
         }
 
         // ---------------------------------------------------
