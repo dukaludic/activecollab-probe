@@ -523,7 +523,7 @@ class TestResult
          */
         function check_view_permissions($link) {
             try {
-                $link->query('CREATE VIEW IF NOT EXISTS test_view AS SELECT 1 AS success;');
+                $link->query('CREATE VIEW test_view AS SELECT 1 AS success;');
 
                 if ($link->error) {
                     return ['ok' => false, 'message' => $link->error];
