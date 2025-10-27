@@ -496,7 +496,7 @@ class TestResult
                 }
 
                 $link->query('
-                CREATE TRIGGER IF NOT EXISTS probe_test_trigger
+                CREATE TRIGGER probe_test_trigger
                 AFTER INSERT ON `probe_test` 
                 FOR EACH ROW 
                 BEGIN 
